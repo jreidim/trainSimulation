@@ -1,0 +1,27 @@
+Simulation Algorithm:
+
+For each time t from 0 to SimulationTime:
+    if, next train arrives (t == next arriving train):
+        add to line queue and print info
+
+    if, dock is empty:
+        if, line is empty:
+            pass
+        else:
+            move next train in line to dock
+    else:
+        if dock is not hogged:
+            if, remaining crew hours <= 0:
+                hog the train
+                request new crew, 12hr clock starts now
+
+            else:
+                remaining unload time goes down
+        if dock is hogged:
+            if, new crew arrival time == t:
+                unhog the train
+                remaing unload time goes down
+        remaining crew time goes down
+
+
+ 
