@@ -8,10 +8,16 @@ For each time t from 0 to SimulationTime:
         if, line is empty:
             pass
         else:
-            move next train in line to dock
+            if next train is not hogged:
+                move next train in line to dock
+            else:
+                wait
     else:
         if dock is not hogged:
-            if, remaining crew hours <= 0:
+            if docked train is finished unloading:
+                process next in line
+
+            else if, remaining crew hours <= 0:
                 hog the train
                 request new crew, 12hr clock starts now
 
@@ -20,8 +26,15 @@ For each time t from 0 to SimulationTime:
         if dock is hogged:
             if, new crew arrival time == t:
                 unhog the train
-                remaing unload time goes down
-        remaining crew time goes down
+                remaining unload time goes down
+
+        for every crew in line:
+            remaining crew time goes down
+            if crew reaches end of work hours:
+                hog the train in line
+                request replacement crew
 
 
  
+bug: when docked train hoggs our during service, and the next train in line hogs out
+    the docked train will never get it's replacement
