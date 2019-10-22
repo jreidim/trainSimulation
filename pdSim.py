@@ -27,10 +27,10 @@ class Crew:
         self.clocks_out = round(call_time + Crew.max_crew_hours - rep_t,2)
 
     def _gen_replacement_crew_hours(self):
-        return round(numpy.random.uniform(*self.hog_crew_remain_hr_interval),2)
+        return round(TrainSimulation.new_crew_travel_time.get(),2)
 
     def _gen_rem_hrs(self):
-        return round(numpy.random.uniform(*self.crew_remain_hr_interval),2)
+        return round(TrainSimulation.remaining_crew_hr.get(),2)
 
 class Train:
     unloading_interval = (3.5, 4.5)
@@ -46,19 +46,29 @@ class Train:
         Train.count += 1 
 
     def _gen_unload_time(self):
-        return round(numpy.random.uniform(*self.unloading_interval),2)
+        return round(TrainSimulation.unloading_times.get(),2)
 
 class TrainSimulation:
     #constructor:
-    def __init__(self, arrival_average: float,  simulation_hours: float):
-        #simulation hours + time it takes for all remaining trains to depart
-        self.simulation_hours = simulation_hours
-        self.arrival_average = arrival_average
+    unloading_times = myQueue.Queue()
+    remaining_crew_hr = myQueue.Queue()
+    new_crew_travel_time = myQueue.Queue()
+    def __init__(self, arrivals, unloading, remaining, crew_travel):
 
         self.line = myQueue.Queue()
+        self.train_times = myQueue.Queue()
+        for t in arrivals:
+            self.train_times.put(round(t,2))
 
-        #generates arrival times
-        self.train_times = self._gen_train_times()
+        for t in unloading:
+            self.unloading_times.put(round(t,2))
+        
+        for t in remaining:
+            self.remaining_crew_hr.put(round(t,2))
+        
+        for t in crew_travel:
+            self.new_crew_travel_time.put(round(t,2))
+
         self.dock = None
 
         #data-structure used for stats
@@ -68,14 +78,14 @@ class TrainSimulation:
     def run(self):
         time = 0
 
-
         idle_c = 0
         hog_c = 0
 
-        #Run simulation until the time is up, the line reaches 0, and the dock is empty
-        while time < self.simulation_hours * 100 or self.line.sz > 0 or self.dock != None:
-            h = time/100 #hours
 
+        #Run simulation until the time is up, the line reaches 0, and the dock is empty
+        while not self.train_times.empty() or self.line.sz > 0 or self.dock != None:
+            h = time/100 #hours
+            #print(self.train_times.sz)
             #if the time matches the next train's arrival time, add to line
             if self.train_times.peak() == h:
                 next_train = Train(self.train_times.get())
@@ -171,7 +181,6 @@ class TrainSimulation:
             average_time = sum([t.departure-t.arrival for t in self.processed])/Train.count
             max_time = max([t.departure-t.arrival for t in self.processed])
             queue_ave = sum([t.entered_dock_t-t.arrival for t in self.processed])/Train.count
-        
         end  = "Time {:.2f}: simulation ended\n\n".format(time/100)
         end += "Statistics\n"
         end += "----------\n"
@@ -229,20 +238,3 @@ class TrainSimulation:
             round(self.dock.crew.clocks_out - time,2),
             self.line.sz
         ))
-        
-    def _gen_train_times(self):
-        total_time = 0
-        t = self._gen_next_arrival()
-        final = myQueue.Queue()
-        count = 0
-        while total_time + t < self.simulation_hours:
-            total_time = round(total_time + t, 2) 
-            final.put(total_time)
-            t = self._gen_next_arrival()
-        return final
-
-    def _gen_next_arrival(self):
-        num = numpy.random.exponential(self.arrival_average)
-        while num < 0.01:
-            num = numpy.random.exponential(self.arrival_average)
-        return num

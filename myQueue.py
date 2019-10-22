@@ -8,6 +8,7 @@ class Queue:
         self.head = None
         self.tail = None
         self.sz = 0
+        self.max = 0
     
     def put(self, data):
         if self.head == None:
@@ -17,6 +18,9 @@ class Queue:
             self.tail.next = Node(data, None)
             self.tail = self.tail.next
         self.sz += 1
+
+        if self.sz > self.max:
+            self.max = self.sz
     
     def get(self):
         if self.head == None:
